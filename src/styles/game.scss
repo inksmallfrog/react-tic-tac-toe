@@ -1,0 +1,20 @@
+/*
+* @Author: inksmallfrog
+* @Date:   2017-04-24 07:32:17
+* @Last Modified by:   inksmallfrog
+* @Last Modified time: 2017-04-24 07:50:25
+*/
+.grids-panel{
+    width: 150px;
+    height: 150px;
+    line-height: 0;
+    @at-root{
+        .grid{
+            display: inline-block;
+            width: 33.33%;
+            height: 33.33%;
+            border: 1px solid #999;
+            box-sizing: border-box;
+        }
+    }
+}
