@@ -2,7 +2,7 @@
 * @Author: inksmallfrog
 * @Date:   2017-04-24 07:13:12
 * @Last Modified by:   inksmallfrog
-* @Last Modified time: 2017-04-24 09:29:37
+* @Last Modified time: 2017-04-24 10:18:29
 */
 
 'use strict';
@@ -10,6 +10,9 @@ require ('styles/game.scss')
 
 import React from 'react';
 import PropTypes from 'prop-types';
+
+import IO from 'socket.io-client';
+let socket = IO();
 
 class Grid extends React.Component{
     constructor(props){
@@ -89,9 +92,22 @@ class Game extends React.Component{
         });
         this.state = {
             chesses: chesses,
-            gameState: 'X'
+            gameState: 'Waiting peer',
+            my_turn: false
         }
     }
+    componentDidMount(){
+        socket.on('canPlay', (turn)=>{
+            this.setState({
+                gameState: 'X',
+                my_turn: turn == 'X'
+            })
+        });
+        socket.on('play', (chess)=>{
+            this.setChess(chess.index);
+        })
+    }
+
     /*
      * 检查游戏是否出现胜利者
      * @return<boolean>: 是否出现胜利者
@@ -128,7 +144,6 @@ class Game extends React.Component{
         }
         return false;
     }
-
     /*
      * 落子事件
      * @params: index, 点击格子的index
@@ -136,19 +151,30 @@ class Game extends React.Component{
      */
     play(index){
         return ()=>{
-            let state = this.state.gameState;
-            if(state == 'X' || state == 'O'){
-                let chesses = this.state.chesses.slice();
-                chesses[index].state = state;
-                this.setState({
-                    chesses: chesses,
-                    gameState: state == 'X' ? 'O' : 'X'
-                })
-                this.checkWinner();
+            if(!this.state.my_turn){
+                alert('It\'s not your turn!');
+                return;
             }
+            this.setChess(index);
+            socket.emit('play', {
+                index: index
+            });
         }
     }
-
+    setChess(index){
+        let state = this.state.gameState;
+        let my_turn = this.state.my_turn;
+        if(state == 'X' || state == 'O'){
+            let chesses = this.state.chesses.slice();
+            chesses[index].state = state;
+            this.setState({
+                chesses: chesses,
+                gameState: state == 'X' ? 'O' : 'X',
+                my_turn: !my_turn
+            });
+            this.checkWinner();
+        }
+    }
     render(){
         return(
             <section>
