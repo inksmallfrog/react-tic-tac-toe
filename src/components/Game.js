@@ -2,7 +2,7 @@
 * @Author: inksmallfrog
 * @Date:   2017-04-24 07:13:12
 * @Last Modified by:   inksmallfrog
-* @Last Modified time: 2017-04-24 10:18:29
+* @Last Modified time: 2017-04-24 11:21:52
 */
 
 'use strict';
@@ -72,13 +72,24 @@ class StatePanel extends React.Component{
         super(props);
     }
     render(){
+        let content = "";
+        if(this.props.gameState == 'X' || this.props.gameState == 'O'){
+            content = (<div>
+                <h4>Current Turn: {this.props.gameState}</h4>
+                <p>{this.props.myTurn ? 'It\'s your turn' : 'Waiting for your opponent…'}</p>
+            </div>)
+        }
+        else{
+            content = <h4>Game not start: {this.props.gameState}</h4>
+        }
         return(
-            <div>
-                <h4>{this.props.gameState}</h4>
-                <ul></ul>
-            </div>
+            content
         )
     }
+}
+StatePanel.propTypes = {
+    gameState: PropTypes.string.isRequired,
+    myTurn: PropTypes.bool.isRequired
 }
 
 class Game extends React.Component{
@@ -93,18 +104,37 @@ class Game extends React.Component{
         this.state = {
             chesses: chesses,
             gameState: 'Waiting peer',
-            my_turn: false
+            myTurn: false,
+            isOver: false,
         }
+    }
+    initGame(){
+        let chesses = Array.apply(null, new Array(9)).map((value, index) => {
+           return {
+                id: index,
+                state: ''
+           }
+        });
+        this.setState({
+            chesses: chesses,
+            gameState: 'Waiting peer',
+            myTurn: false,
+            isOver: false,
+        });
     }
     componentDidMount(){
         socket.on('canPlay', (turn)=>{
             this.setState({
                 gameState: 'X',
-                my_turn: turn == 'X'
+                myTurn: turn == 'X'
             })
         });
         socket.on('play', (chess)=>{
             this.setChess(chess.index);
+        });
+        socket.on('losePeer', ()=>{
+            alert('Your opponent has quitted the game!');
+            this.initGame();
         })
     }
 
@@ -138,7 +168,8 @@ class Game extends React.Component{
         });
         if(winner){
             this.setState({
-                gameState: 'Winner is ' + winner
+                gameState: 'Winner is ' + winner,
+                isOver: true
             })
             return true;
         }
@@ -151,7 +182,8 @@ class Game extends React.Component{
      */
     play(index){
         return ()=>{
-            if(!this.state.my_turn){
+            if(this.state.isOver) return;
+            if(!this.state.myTurn){
                 alert('It\'s not your turn!');
                 return;
             }
@@ -163,14 +195,14 @@ class Game extends React.Component{
     }
     setChess(index){
         let state = this.state.gameState;
-        let my_turn = this.state.my_turn;
+        let myTurn = this.state.myTurn;
         if(state == 'X' || state == 'O'){
             let chesses = this.state.chesses.slice();
             chesses[index].state = state;
             this.setState({
                 chesses: chesses,
                 gameState: state == 'X' ? 'O' : 'X',
-                my_turn: !my_turn
+                myTurn: !myTurn
             });
             this.checkWinner();
         }
@@ -179,7 +211,7 @@ class Game extends React.Component{
         return(
             <section>
                 <Board chesses={this.state.chesses} play={this.play.bind(this)}/>
-                <StatePanel gameState={this.state.gameState}/>
+                <StatePanel gameState={this.state.gameState} myTurn={this.state.myTurn}/>
             </section>
         )
     }

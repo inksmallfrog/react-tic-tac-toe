@@ -13635,7 +13635,7 @@ module.exports = yeast;
 * @Author: inksmallfrog
 * @Date:   2017-04-24 07:13:12
 * @Last Modified by:   inksmallfrog
-* @Last Modified time: 2017-04-24 10:18:29
+* @Last Modified time: 2017-04-24 11:21:52
 */
 
 
@@ -13763,21 +13763,42 @@ var StatePanel = function (_React$Component3) {
     _createClass(StatePanel, [{
         key: 'render',
         value: function render() {
-            return _react2.default.createElement(
-                'div',
-                null,
-                _react2.default.createElement(
+            var content = "";
+            if (this.props.gameState == 'X' || this.props.gameState == 'O') {
+                content = _react2.default.createElement(
+                    'div',
+                    null,
+                    _react2.default.createElement(
+                        'h4',
+                        null,
+                        'Current Turn: ',
+                        this.props.gameState
+                    ),
+                    _react2.default.createElement(
+                        'p',
+                        null,
+                        this.props.myTurn ? 'It\'s your turn' : 'Waiting for your opponent…'
+                    )
+                );
+            } else {
+                content = _react2.default.createElement(
                     'h4',
                     null,
+                    'Game not start: ',
                     this.props.gameState
-                ),
-                _react2.default.createElement('ul', null)
-            );
+                );
+            }
+            return content;
         }
     }]);
 
     return StatePanel;
 }(_react2.default.Component);
+
+StatePanel.propTypes = {
+    gameState: _propTypes2.default.string.isRequired,
+    myTurn: _propTypes2.default.bool.isRequired
+};
 
 var Game = function (_React$Component4) {
     _inherits(Game, _React$Component4);
@@ -13796,12 +13817,29 @@ var Game = function (_React$Component4) {
         _this5.state = {
             chesses: chesses,
             gameState: 'Waiting peer',
-            my_turn: false
+            myTurn: false,
+            isOver: false
         };
         return _this5;
     }
 
     _createClass(Game, [{
+        key: 'initGame',
+        value: function initGame() {
+            var chesses = Array.apply(null, new Array(9)).map(function (value, index) {
+                return {
+                    id: index,
+                    state: ''
+                };
+            });
+            this.setState({
+                chesses: chesses,
+                gameState: 'Waiting peer',
+                myTurn: false,
+                isOver: false
+            });
+        }
+    }, {
         key: 'componentDidMount',
         value: function componentDidMount() {
             var _this6 = this;
@@ -13809,11 +13847,15 @@ var Game = function (_React$Component4) {
             socket.on('canPlay', function (turn) {
                 _this6.setState({
                     gameState: 'X',
-                    my_turn: turn == 'X'
+                    myTurn: turn == 'X'
                 });
             });
             socket.on('play', function (chess) {
                 _this6.setChess(chess.index);
+            });
+            socket.on('losePeer', function () {
+                alert('Your opponent has quitted the game!');
+                _this6.initGame();
             });
         }
 
@@ -13839,7 +13881,8 @@ var Game = function (_React$Component4) {
             });
             if (winner) {
                 this.setState({
-                    gameState: 'Winner is ' + winner
+                    gameState: 'Winner is ' + winner,
+                    isOver: true
                 });
                 return true;
             }
@@ -13857,7 +13900,8 @@ var Game = function (_React$Component4) {
             var _this7 = this;
 
             return function () {
-                if (!_this7.state.my_turn) {
+                if (_this7.state.isOver) return;
+                if (!_this7.state.myTurn) {
                     alert('It\'s not your turn!');
                     return;
                 }
@@ -13871,14 +13915,14 @@ var Game = function (_React$Component4) {
         key: 'setChess',
         value: function setChess(index) {
             var state = this.state.gameState;
-            var my_turn = this.state.my_turn;
+            var myTurn = this.state.myTurn;
             if (state == 'X' || state == 'O') {
                 var chesses = this.state.chesses.slice();
                 chesses[index].state = state;
                 this.setState({
                     chesses: chesses,
                     gameState: state == 'X' ? 'O' : 'X',
-                    my_turn: !my_turn
+                    myTurn: !myTurn
                 });
                 this.checkWinner();
             }
@@ -13890,7 +13934,7 @@ var Game = function (_React$Component4) {
                 'section',
                 null,
                 _react2.default.createElement(Board, { chesses: this.state.chesses, play: this.play.bind(this) }),
-                _react2.default.createElement(StatePanel, { gameState: this.state.gameState })
+                _react2.default.createElement(StatePanel, { gameState: this.state.gameState, myTurn: this.state.myTurn })
             );
         }
     }]);
