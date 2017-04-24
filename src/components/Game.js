@@ -2,7 +2,7 @@
 * @Author: inksmallfrog
 * @Date:   2017-04-24 07:13:12
 * @Last Modified by:   inksmallfrog
-* @Last Modified time: 2017-04-24 08:56:38
+* @Last Modified time: 2017-04-24 09:29:37
 */
 
 'use strict';
@@ -57,7 +57,7 @@ class Board extends React.Component{
     }
 }
 Board.propTypes = {
-    playChess: PropTypes.func.isRequired,
+    play: PropTypes.func.isRequired,
     chesses: PropTypes.arrayOf(PropTypes.shape({
                                 id: PropTypes.number,
                                 state: PropTypes.oneOf(['', 'X', 'O'])
